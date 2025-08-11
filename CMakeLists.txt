@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(qttube-plugin-interface
     VERSION 0.1
     DESCRIPTION "An interface for developing plugins for QtTube."
-    HOMEPAGE_URL "https://github.com/"
+    HOMEPAGE_URL "https://github.com/BowDown097/qttube-plugin-interface"
     LANGUAGES CXX)
 
 option(ENABLE_WEB_COMPONENTS "Enable usage of WebEngine-based components." OFF)
