@@ -21,7 +21,7 @@ set_target_properties(QtTube-PluginInterface PROPERTIES
 target_include_directories(QtTube-PluginInterface PUBLIC verdigris/src)
 
 target_compile_definitions(QtTube-PluginInterface PUBLIC
-    QTTUBE_VERSION_NAME="${CMAKE_PROJECT_VERSION}")
+    QTTUBE_VERSION_NAME="${PROJECT_VERSION}")
 
 target_sources(QtTube-PluginInterface
     PRIVATE

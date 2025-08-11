@@ -7,6 +7,7 @@ namespace QtTubePlugin
     {
         Q_OBJECT
     public:
+        virtual ~AuthRoutine() = default;
         virtual void start() = 0;
     signals:
         void success();
