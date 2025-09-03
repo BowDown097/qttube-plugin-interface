@@ -16,42 +16,44 @@ namespace QtTubePlugin
     {
         virtual ~PluginInterface() = default;
 
-        virtual AccountReply* getActiveAccount() { return AccountReply::create(); }
+        virtual AccountReply* getActiveAccount() { return nullptr; }
 
         virtual ChannelReply* getChannel(
             const QString& channelId,
             std::any tabData,
-            std::any continuationData) { return ChannelReply::create(); }
+            std::any continuationData) { return nullptr; }
 
-        virtual BrowseReply* getHistory(const QString& query, std::any continuationData) { return BrowseReply::create(); }
-        virtual BrowseReply* getHome(std::any continuationData) { return BrowseReply::create(); }
-        virtual NotificationsReply* getNotifications(std::any continuationData) { return NotificationsReply::create(); }
+        virtual BrowseReply* getHistory(const QString& query, std::any continuationData) { return nullptr; }
+        virtual BrowseReply* getHome(std::any continuationData) { return nullptr; }
+        virtual NotificationsReply* getNotifications(std::any continuationData) { return nullptr; }
         virtual BrowseReply* getSearch(
             const QString& query,
             const QList<std::pair<QString, int>>& activeFilters, // mapped as category -> index
-            std::any continuationData) { return BrowseReply::create(); }
-        virtual BrowseReply* getSubFeed(std::any continuationData) { return BrowseReply::create(); }
-        virtual BrowseReply* getTrending(std::any continuationData) { return BrowseReply::create(); }
+            std::any continuationData) { return nullptr; }
+        virtual BrowseReply* getSubFeed(std::any continuationData) { return nullptr; }
+        virtual BrowseReply* getTrending(std::any continuationData) { return nullptr; }
 
-        virtual RecommendedContinuationReply* continueRecommended(const QString& videoId, std::any continuationData)
-        { return RecommendedContinuationReply::create(); }
-        virtual VideoReply* getVideo(const QString& videoId) { return VideoReply::create(); }
+        virtual RecommendedContinuationReply* continueRecommended(
+            const QString& videoId,
+            std::any continuationData) { return nullptr; }
 
-        virtual LiveChatReply* getLiveChat(std::any data) { return LiveChatReply::create(); }
-        virtual LiveChatReplayReply* getLiveChatReplay(std::any data, qint64 videoOffsetMs) { return LiveChatReplayReply::create(); }
-        virtual Reply<void>* sendLiveChatMessage(const QString& text) { return Reply<void>::create(); }
+        virtual VideoReply* getVideo(const QString& videoId) { return nullptr; }
+
+        virtual LiveChatReply* getLiveChat(std::any data) { return nullptr; }
+        virtual LiveChatReplayReply* getLiveChatReplay(std::any data, qint64 videoOffsetMs) { return nullptr; }
+        virtual Reply<void>* sendLiveChatMessage(const QString& text) { return nullptr; }
 
         virtual Reply<void>* rate(
             const QString& videoId,
             bool like,
             bool removing,
-            std::any data) { return Reply<void>::create(); }
+            std::any data) { return nullptr; }
 
-        virtual Reply<void>* setNotificationPreference(std::any data) { return Reply<void>::create(); }
-        virtual Reply<void>* subscribe(std::any data) { return Reply<void>::create(); }
-        virtual Reply<void>* unsubscribe(std::any data) { return Reply<void>::create(); }
+        virtual Reply<void>* setNotificationPreference(std::any data) { return nullptr; }
+        virtual Reply<void>* subscribe(std::any data) { return nullptr; }
+        virtual Reply<void>* unsubscribe(std::any data) { return nullptr; }
 
-        virtual ResolveUrlReply* resolveUrlOrID(const QString& in) { return ResolveUrlReply::create(); }
+        virtual ResolveUrlReply* resolveUrlOrID(const QString& in) { return nullptr; }
 
         virtual void init() = 0;
 
