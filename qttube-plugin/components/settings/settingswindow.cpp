@@ -15,7 +15,7 @@ namespace QtTubePlugin
         if (savePending())
         {
             QMessageBox::StandardButton unsavedResponse = QMessageBox::warning(this,
-                "Unsaved changes", "You have unsaved changes! Would you like to save them?",
+                "Unsaved Changes", "You have unsaved changes. Would you like to save them?",
                 QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
             if (unsavedResponse == QMessageBox::Yes)
                 saveSettings();
