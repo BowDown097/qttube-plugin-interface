@@ -1,5 +1,5 @@
 #pragma once
-#include "components/reply.h"
+#include "qttube-plugin/components/reply.h"
 #include <bitset>
 #include <QMutexLocker>
 

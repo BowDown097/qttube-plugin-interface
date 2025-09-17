@@ -28,11 +28,12 @@ target_sources(QtTube-PluginInterface
         qttube-plugin/components/auth/authstore.cpp
         qttube-plugin/components/player/fullscreennotification.cpp
         qttube-plugin/components/settings/settingswindow.cpp
+        qttube-plugin/utils/httprequest.cpp
+        qttube-plugin/utils/localcache.cpp
     PUBLIC
         FILE_SET HEADERS FILES
             qttube-plugin/plugininterface.h
             qttube-plugin/pluginmetadata.h
-            qttube-plugin/replyutils.h
             qttube-plugin/components/configstore.h
             qttube-plugin/components/reply.h
             qttube-plugin/components/auth/authroutine.h
@@ -61,7 +62,10 @@ target_sources(QtTube-PluginInterface
             qttube-plugin/objects/livechat/items/giftredemptionmessage.h
             qttube-plugin/objects/livechat/items/paidmessage.h
             qttube-plugin/objects/livechat/items/specialmessage.h
-            qttube-plugin/objects/livechat/items/textmessage.h)
+            qttube-plugin/objects/livechat/items/textmessage.h
+            qttube-plugin/utils/httprequest.h
+            qttube-plugin/utils/localcache.h
+            qttube-plugin/utils/replyutils.h)
 
 if(ENABLE_WEB_COMPONENTS)
     find_package(Qt6 REQUIRED COMPONENTS WebEngineWidgets Widgets)
