@@ -4,15 +4,12 @@
 
 namespace QtTubePlugin
 {
-    struct PluginMetadata;
-
     struct Video
     {
         bool isVerticalVideo{};
         QString lengthText;
         QString metadataText;
         int progressSecs{};
-        PluginMetadata* sourceMetadata{};
         QList<Badge> tags; // or badges
         QString thumbnailUrl;
         QString title;

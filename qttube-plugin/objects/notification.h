@@ -3,8 +3,6 @@
 
 namespace QtTubePlugin
 {
-    struct PluginMetadata;
-
     struct Notification
     {
         enum class TargetType { Channel, Video };
@@ -15,7 +13,6 @@ namespace QtTubePlugin
         QString channelUrlPrefix;
         QString notificationId;
         QString sentTimeText;
-        PluginMetadata* sourceMetadata{};
         QString targetId;
         TargetType targetType;
         QString targetUrlPrefix;

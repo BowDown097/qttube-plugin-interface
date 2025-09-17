@@ -44,7 +44,6 @@ namespace QtTubePlugin
         LikeStatus likeStatus = LikeStatus::Neutral;
         bool ratingsAvailable = true;
         QList<Video> recommendedVideos;
-        PluginMetadata* sourceMetadata{};
         QString titleText;
         QString videoId;
         QString videoUrlPrefix;

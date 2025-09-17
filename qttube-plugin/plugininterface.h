@@ -3,6 +3,7 @@
 #include "components/player/player.h"
 #include "components/replytypes/replytypes.h"
 #include "components/settings/settingsstore.h"
+#include "pluginmetadata.h"
 
 #ifdef Q_OS_WIN
 #define DLLEXPORT __declspec(dllexport)
@@ -59,16 +60,6 @@ namespace QtTubePlugin
 
         // mapped as category -> filters
         virtual const QList<std::pair<QString, QStringList>> searchFilters() const { return {}; }
-    };
-
-    struct PluginMetadata
-    {
-        const char* name;
-        const char* version;
-        const char* description;
-        const char* image;
-        const char* author;
-        const char* url;
     };
 }
 

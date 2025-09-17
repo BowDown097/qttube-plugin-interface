@@ -31,6 +31,7 @@ target_sources(QtTube-PluginInterface
     PUBLIC
         FILE_SET HEADERS FILES
             qttube-plugin/plugininterface.h
+            qttube-plugin/pluginmetadata.h
             qttube-plugin/replyutils.h
             qttube-plugin/components/configstore.h
             qttube-plugin/components/reply.h

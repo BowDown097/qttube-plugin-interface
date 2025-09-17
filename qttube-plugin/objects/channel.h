@@ -5,8 +5,6 @@
 
 namespace QtTubePlugin
 {
-    struct PluginMetadata;
-
     struct NotificationState
     {
         enum class Representation { All, None, Neutral };
@@ -71,7 +69,6 @@ namespace QtTubePlugin
         QString channelUrlPrefix;
         QString description;
         QString metadataText;
-        PluginMetadata* sourceMetadata{};
         SubscribeButton subscribeButton;
     };
 }
