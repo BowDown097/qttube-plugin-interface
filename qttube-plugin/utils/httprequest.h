@@ -19,6 +19,7 @@ public:
     // if you just want the QNetworkAccessManager that this uses, because it does have some extra goodies
     static QNetworkAccessManager* networkAccessManager();
 
+    QVariant attribute(QNetworkRequest::Attribute code) const;
     QString errorString() const;
     QString getFileName() const;
     QByteArray header(const QByteArray& key) const;
@@ -45,6 +46,7 @@ private slots:
     void readyRead(QNetworkReply* networkReply);
 signals:
     void errorOccurred(QNetworkReply::NetworkError error);
+    void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
     void finished(const HttpReply& reply);
 };
 

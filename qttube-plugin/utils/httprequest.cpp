@@ -2,6 +2,14 @@
 #include <QNetworkDiskCache>
 #include <QStandardPaths>
 
+QVariant HttpReply::attribute(QNetworkRequest::Attribute code) const
+{
+    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
+        return reply->attribute(code);
+    else
+        throw std::runtime_error("Attempting to access reply when request has not been made");
+}
+
 QString HttpReply::errorString() const
 {
     if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
@@ -92,9 +100,7 @@ QNetworkAccessManager* HttpReply::networkAccessManager()
 
 const QByteArray& HttpReply::readAll() const
 {
-    if (const QByteArray* byteArray = std::get_if<QByteArray>(&m_destination))
-        return *byteArray;
-    throw std::runtime_error("Attempting to get data from reply which has been written to an IO device");
+    return std::get<QByteArray>(m_destination);
 }
 
 void HttpReply::readyRead(QNetworkReply* networkReply)
@@ -168,6 +174,7 @@ HttpReply* HttpRequest::request(
     if (QNetworkReply* reply = networkReply(req, operation, data))
     {
         result->setParent(reply);
+        QObject::connect(reply, &QNetworkReply::downloadProgress, result, &HttpReply::downloadProgress);
         QObject::connect(reply, &QNetworkReply::errorOccurred, result, &HttpReply::errorOccurred);
         QObject::connect(reply, &QNetworkReply::finished, result, [result] { emit result->finished(*result); });
         QObject::connect(reply, &QNetworkReply::readyRead, result, [reply, result] { emit result->readyRead(reply); });
