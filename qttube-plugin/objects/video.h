@@ -6,11 +6,11 @@ namespace QtTubePlugin
 {
     struct Video
     {
+        QList<Badge> badges;
         bool isVerticalVideo{};
         QString lengthText;
         QString metadataText;
         int progressSecs{};
-        QList<Badge> tags; // or badges
         QString thumbnailUrl;
         QString title;
         QString uploaderAvatarUrl;
