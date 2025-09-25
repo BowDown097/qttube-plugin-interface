@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(qttube-plugin-interface
-    VERSION 0.1
+    VERSION 1.0
     DESCRIPTION "An interface for developing plugins for QtTube."
     HOMEPAGE_URL "https://github.com/BowDown097/qttube-plugin-interface"
     LANGUAGES CXX)
