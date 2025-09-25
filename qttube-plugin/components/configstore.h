@@ -1,4 +1,5 @@
 #pragma once
+#include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
 #include <QStandardPaths>
@@ -16,15 +17,21 @@ namespace QtTubePlugin
         const QString& configPath() const { return m_configPath; }
 
         template<typename T> requires std::derived_from<T, ConfigStore>
-        static std::unique_ptr<T> create(const QString& plugin, const QString& key)
+        static std::unique_ptr<T> create(const QString& plugin, const QString& key, bool portable)
         {
             auto inst = std::make_unique<T>();
+
+            const QString appConfigLocation = portable
+                ? QCoreApplication::applicationDirPath() + QDir::separator() + "config"
+                : QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
+
             inst->m_configPath =
-                QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) +
+                appConfigLocation +
                 QDir::separator() +
                 plugin.toLower().replace(' ', '-') +
                 QDir::separator() +
                 key + ".ini";
+
             return inst;
         }
     protected:

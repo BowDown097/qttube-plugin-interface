@@ -9,9 +9,9 @@ namespace QtTubePlugin
         virtual SettingsWindow* window() { return nullptr; }
 
         template<typename T> requires std::derived_from<T, SettingsStore>
-        static std::unique_ptr<T> create(const QString& plugin)
+        static std::unique_ptr<T> create(const QString& plugin, bool portable)
         {
-            return ConfigStore::create<T>(plugin, "settings");
+            return ConfigStore::create<T>(plugin, "settings", portable);
         }
     };
 }

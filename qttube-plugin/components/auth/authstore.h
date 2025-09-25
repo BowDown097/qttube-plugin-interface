@@ -37,9 +37,9 @@ namespace QtTubePlugin
         virtual void update(const InitialAccountData& data) = 0;
 
         template<typename T> requires std::derived_from<T, AuthStoreBase>
-        static std::unique_ptr<T> create(const QString& plugin)
+        static std::unique_ptr<T> create(const QString& plugin, bool portable)
         {
-            return ConfigStore::create<T>(plugin, "auth");
+            return ConfigStore::create<T>(plugin, "auth", portable);
         }
     protected:
         std::vector<std::unique_ptr<AuthUser>> m_credentials;

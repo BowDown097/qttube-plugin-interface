@@ -61,6 +61,20 @@ namespace QtTubePlugin
         // mapped as category -> filters
         virtual const QList<std::pair<QString, QStringList>> searchFilters() const { return {}; }
     };
+
+    static bool isPortableBuild()
+    {
+        static const bool result =
+            QFile::exists(QCoreApplication::applicationDirPath() + QDir::separator() + "portable.txt");
+        return result;
+    }
+
+    static bool isSelfContainedBuild()
+    {
+        static const bool result = isPortableBuild() ||
+            QFile::exists(QCoreApplication::applicationDirPath() + QDir::separator() + "selfcontained.txt");
+        return result;
+    }
 }
 
 using QtTubePluginAuthFunc = QtTubePlugin::AuthStoreBase*(*)();
@@ -103,7 +117,7 @@ EXPAND(GET_MACRO(__VA_ARGS__, \
         DLLEXPORT QtTubePlugin::Player* player(QWidget* parent) { return new PlayerClass(parent); } \
         DLLEXPORT QtTubePlugin::Settings* settings() \
         { \
-            static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME); \
+            static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
             return s.get(); \
         } \
     }
@@ -117,12 +131,12 @@ EXPAND(GET_MACRO(__VA_ARGS__, \
         DLLEXPORT QtTubePlugin::Player* player(QWidget* parent) { return new PlayerClass(parent); } \
         DLLEXPORT QtTubePlugin::SettingsStore* settings() \
         { \
-            static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME); \
+            static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
             return s.get(); \
         } \
         DLLEXPORT QtTubePlugin::AuthStoreBase* auth() \
         { \
-            static std::unique_ptr<AuthClass> a = QtTubePlugin::AuthStoreBase::create<AuthClass>(PLUGIN_NAME); \
+            static std::unique_ptr<AuthClass> a = QtTubePlugin::AuthStoreBase::create<AuthClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
             return a.get(); \
         } \
     }
