@@ -63,6 +63,7 @@ target_sources(QtTube-PluginInterface
             qttube-plugin/objects/livechat/items/paidmessage.h
             qttube-plugin/objects/livechat/items/specialmessage.h
             qttube-plugin/objects/livechat/items/textmessage.h
+            qttube-plugin/utils/filesystem.h
             qttube-plugin/utils/httprequest.h
             qttube-plugin/utils/localcache.h
             qttube-plugin/utils/replyutils.h)

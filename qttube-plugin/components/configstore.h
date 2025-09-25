@@ -1,4 +1,5 @@
 #pragma once
+#include "qttube-plugin/utils/filesystem.h"
 #include <QCoreApplication>
 #include <QDir>
 #include <QSettings>
@@ -22,15 +23,11 @@ namespace QtTubePlugin
             auto inst = std::make_unique<T>();
 
             const QString appConfigLocation = portable
-                ? QCoreApplication::applicationDirPath() + QDir::separator() + "config"
+                ? FS::joinPaths(QCoreApplication::applicationDirPath(), "config")
                 : QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
 
-            inst->m_configPath =
-                appConfigLocation +
-                QDir::separator() +
-                plugin.toLower().replace(' ', '-') +
-                QDir::separator() +
-                key + ".ini";
+            inst->m_configPath = FS::joinPaths(
+                appConfigLocation, plugin.toLower().replace(' ', '-'), key + ".ini");
 
             return inst;
         }

@@ -65,14 +65,14 @@ namespace QtTubePlugin
     static bool isPortableBuild()
     {
         static const bool result =
-            QFile::exists(QCoreApplication::applicationDirPath() + QDir::separator() + "portable.txt");
+            QFile::exists(FS::joinPaths(QCoreApplication::applicationDirPath(), "portable.txt"));
         return result;
     }
 
     static bool isSelfContainedBuild()
     {
         static const bool result = isPortableBuild() ||
-            QFile::exists(QCoreApplication::applicationDirPath() + QDir::separator() + "selfcontained.txt");
+            QFile::exists(FS::joinPaths(QCoreApplication::applicationDirPath(), "selfcontained.txt"));
         return result;
     }
 }
