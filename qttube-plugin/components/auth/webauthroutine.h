@@ -1,12 +1,12 @@
 #pragma once
 #include "authroutine.h"
 #include <QHash>
+#include <QMutex>
+#include <QNetworkCookie>
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
 #include <QWebEngineUrlRequestInterceptor>
 #endif
-
-class QNetworkCookie;
 
 namespace QtTubePlugin
 {
@@ -30,6 +30,13 @@ namespace QtTubePlugin
         QByteArray name;
         QString domain;
         QString path;
+
+        friend bool operator==(const SearchCookie& lhs, const QNetworkCookie& rhs)
+        {
+            return (lhs.name == rhs.name()) &&
+                   (lhs.domain.isEmpty() || lhs.domain == rhs.domain()) &&
+                   (lhs.path.isEmpty() || lhs.path == rhs.path());
+        }
     };
 
     class WebAuthRoutine : public AuthRoutine
@@ -40,22 +47,28 @@ namespace QtTubePlugin
         void setSearchCookies(const QList<SearchCookie>& cookies);
         virtual void onNewCookie(const QByteArray& name, const QByteArray& value) {}
 
+        // header functions are no-op until Qt 6.5
+        QHash<QByteArray, QByteArray> searchHeaders() const;
+        void setSearchHeaders(const QList<QByteArray>& headers);
+        virtual void onNewHeader(const QByteArray& name, const QByteArray& value) {}
+
         void setUrl(const QUrl& url) { m_url = url; }
         void start() override;
     protected:
         QList<std::pair<SearchCookie, QByteArray>> m_searchCookies;
         QUrl m_url;
     private:
+        QWidget* m_loginWindow{};
+        QMutex m_searchCheckMutex;
+        bool m_successEmitted{};
+
+        void checkAndEmitSuccess();
         bool nothingToSearch() const;
     private slots:
         void cookieAdded(const QNetworkCookie& cookie);
 
     // Qt does not provide any way to intercept headers until Qt 6.5
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    public:
-        const QHash<QByteArray, QByteArray>& searchHeaders() const { return m_searchHeaders; }
-        void setSearchHeaders(const QList<QByteArray>& headers);
-        virtual void onNewHeader(const QByteArray& name, const QByteArray& value) {}
     protected:
         QHash<QByteArray, QByteArray> m_searchHeaders;
     private:
