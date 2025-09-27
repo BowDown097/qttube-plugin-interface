@@ -69,8 +69,8 @@ target_sources(QtTube-PluginInterface
             qttube-plugin/utils/replyutils.h)
 
 if(ENABLE_WEB_COMPONENTS)
-    find_package(Qt6 REQUIRED COMPONENTS WebEngineWidgets Widgets)
-    target_link_libraries(QtTube-PluginInterface PUBLIC Qt::WebEngineWidgets Qt::Widgets)
+    find_package(Qt6 REQUIRED COMPONENTS Network WebEngineWidgets Widgets)
+    target_link_libraries(QtTube-PluginInterface PUBLIC Qt::Network Qt::WebEngineWidgets Qt::Widgets)
     target_sources(QtTube-PluginInterface
         PRIVATE
             qttube-plugin/components/auth/webauthroutine.cpp
@@ -80,8 +80,8 @@ if(ENABLE_WEB_COMPONENTS)
                 qttube-plugin/components/auth/webauthroutine.h
                 qttube-plugin/components/player/webplayer.h)
 else()
-    find_package(Qt6 REQUIRED COMPONENTS Widgets)
-    target_link_libraries(QtTube-PluginInterface PUBLIC Qt::Widgets)
+    find_package(Qt6 REQUIRED COMPONENTS Network Widgets)
+    target_link_libraries(QtTube-PluginInterface PUBLIC Qt::Network Qt::Widgets)
 endif()
 
 add_library(QtTube::PluginInterface ALIAS QtTube-PluginInterface)
