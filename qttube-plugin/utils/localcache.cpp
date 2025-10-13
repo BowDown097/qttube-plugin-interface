@@ -9,16 +9,15 @@
 #include <QMap>
 #include <QStandardPaths>
 
-LocalCache* LocalCache::instance(const char* name)
+LocalCache* LocalCache::instance(const QByteArray& name)
 {
     static std::unordered_map<QByteArray, std::unique_ptr<LocalCache>> instances;
-    if (auto it = instances.find(QByteArray::fromRawData(name, strlen(name))); it != instances.end())
+    if (auto it = instances.find(name); it != instances.end())
         return it->second.get();
 
     std::unique_ptr<LocalCache> instance(new LocalCache(name)); // make_unique can't be used because ctor is private
-    LocalCache* instancePtr = instance.get();
-    instances.emplace(instance->getName(), std::move(instance));
-    return instancePtr;
+    auto [it, _] = instances.emplace(instance->getName(), std::move(instance));
+    return it->second.get();
 }
 
 LocalCache::LocalCache(const QByteArray& name)
@@ -88,7 +87,7 @@ void LocalCache::insert(const QByteArray& key, const QByteArray& value)
     if (const QString parentDir = path.left(path.lastIndexOf('/')); !QFile::exists(parentDir))
         QDir().mkpath(parentDir);
 
-    if (QFile file(path); file.open(QIODevice::WriteOnly))
+    if (QFile file(path); file.open(QFile::WriteOnly))
     {
         file.write(value);
         if (size > 0)
@@ -113,7 +112,7 @@ bool LocalCache::isCached(const QString& path)
 
 QByteArray LocalCache::possiblyStaleValue(const QByteArray& key)
 {
-    if (QFile file(cachePath(key)); file.open(QIODevice::ReadOnly))
+    if (QFile file(cachePath(key)); file.open(QFile::ReadOnly))
         return file.readAll();
     return QByteArray();
 }
@@ -124,7 +123,7 @@ QByteArray LocalCache::value(const QByteArray& key)
     if (!isCached(path))
         return QByteArray();
 
-    if (QFile file(path); file.open(QIODevice::ReadOnly))
+    if (QFile file(path); file.open(QFile::ReadOnly))
     {
         return file.readAll();
     }

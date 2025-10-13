@@ -8,7 +8,7 @@
 class LocalCache
 {
 public:
-    static LocalCache* instance(const char* name);
+    static LocalCache* instance(const QByteArray& name);
     static QByteArray hash(const QByteArray& s);
 
     const QByteArray& getName() const { return name; }
