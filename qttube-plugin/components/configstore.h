@@ -1,7 +1,6 @@
 #pragma once
 #include "qttube-plugin/utils/filesystem.h"
 #include <QCoreApplication>
-#include <QDir>
 #include <QSettings>
 #include <QStandardPaths>
 
@@ -21,17 +20,21 @@ namespace QtTubePlugin
         static std::unique_ptr<T> create(const QString& plugin, const QString& key, bool portable)
         {
             auto inst = std::make_unique<T>();
+            inst->m_configPath = resolveConfigPath(plugin, key, portable);
+            return inst;
+        }
 
+        static QString resolveConfigPath(const QString& plugin, const QString& key, bool portable)
+        {
             const QString appConfigLocation = portable
                 ? FS::joinPaths(QCoreApplication::applicationDirPath(), "config")
                 : QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation);
-
-            inst->m_configPath = FS::joinPaths(
-                appConfigLocation, plugin.toLower().replace(' ', '-'), key + ".ini");
-
-            return inst;
+            return FS::joinPaths(appConfigLocation, plugin.toLower().replace(' ', '-'), key + ".ini");
         }
     protected:
+        void setConfigPath(const QString& configPath) { m_configPath = configPath; }
+        void setConfigPath(QString&& configPath) { m_configPath = std::move(configPath); }
+
         template<typename T> requires std::constructible_from<QVariant, T>
         void readIntoList(QSettings& settings, QList<T>& list, const QString& prefix, const QString& key)
         {
