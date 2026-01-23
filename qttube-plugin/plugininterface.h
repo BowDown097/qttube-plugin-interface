@@ -80,7 +80,7 @@ namespace QtTubePlugin
 using QtTubePluginAuthFunc = QtTubePlugin::AuthStoreBase*(*)();
 using QtTubePluginMetadataFunc = QtTubePlugin::PluginMetadata(*)();
 using QtTubePluginNewInstanceFunc = QtTubePlugin::PluginInterface*(*)();
-using QtTubePluginPlayerFunc = QtTubePlugin::Player*(*)(QWidget*);
+using QtTubePluginPlayerFunc = QtTubePlugin::Player*(*)(QtTubePlugin::PlayerSettings*, QWidget*);
 using QtTubePluginSettingsFunc = QtTubePlugin::SettingsStore*(*)();
 using QtTubePluginTargetVersionFunc = const char*(*)();
 
@@ -105,7 +105,7 @@ EXPAND(GET_MACRO(__VA_ARGS__, \
         DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
         DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
         DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
-        DLLEXPORT QtTubePlugin::Player* player(QWidget* parent) { return new PlayerClass(parent); } \
+        DLLEXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) { return new PlayerClass(settings, parent); } \
     }
 
 #define DECLARE_QTTUBE_PLUGIN3(PluginClass, PlayerClass, SettingsClass) \
@@ -114,7 +114,7 @@ EXPAND(GET_MACRO(__VA_ARGS__, \
         DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
         DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
         DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
-        DLLEXPORT QtTubePlugin::Player* player(QWidget* parent) { return new PlayerClass(parent); } \
+        DLLEXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) { return new PlayerClass(settings, parent); } \
         DLLEXPORT QtTubePlugin::Settings* settings() \
         { \
             static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
@@ -128,7 +128,7 @@ EXPAND(GET_MACRO(__VA_ARGS__, \
         DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
         DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
         DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
-        DLLEXPORT QtTubePlugin::Player* player(QWidget* parent) { return new PlayerClass(parent); } \
+        DLLEXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) { return new PlayerClass(settings, parent); } \
         DLLEXPORT QtTubePlugin::SettingsStore* settings() \
         { \
             static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \

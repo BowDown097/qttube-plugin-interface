@@ -59,7 +59,7 @@ namespace QtTubePlugin
     {
         Q_OBJECT
     public:
-        explicit WebPlayer(QWidget* parent = nullptr);
+        explicit WebPlayer(QtTubePlugin::PlayerSettings* settings, QWidget* parent = nullptr);
     protected:
         QWebChannel* m_channel;
         WebChannelInterface* m_interface;

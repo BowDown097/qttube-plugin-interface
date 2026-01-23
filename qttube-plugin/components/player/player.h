@@ -18,9 +18,13 @@ namespace QtTubePlugin
             State_Cued = 5
         };
 
-        using QWidget::QWidget;
+        explicit Player(QtTubePlugin::PlayerSettings* settings, QWidget* parent = nullptr)
+            : QWidget(parent), m_settings(settings) {}
+        QtTubePlugin::PlayerSettings* settings() const { return m_settings; }
+    private:
+        QtTubePlugin::PlayerSettings* m_settings;
     public slots:
-        virtual void play(const QString& videoId, int progress, QtTubePlugin::PlayerSettings* settings) = 0;
+        virtual void play(const QString& videoId, int progress) = 0;
         virtual void seek(int progress) = 0;
     signals:
         void copyToClipboardRequested(const QString& text);

@@ -108,8 +108,8 @@ namespace QtTubePlugin
         QWidget::resizeEvent(event);
     }
 
-    WebPlayer::WebPlayer(QWidget* parent)
-        : Player(parent),
+    WebPlayer::WebPlayer(QtTubePlugin::PlayerSettings* settings, QWidget* parent)
+        : Player(settings, parent),
           m_interface(new WebChannelInterface(this)),
           m_view(new QWebEngineView(this))
     {
@@ -119,6 +119,7 @@ namespace QtTubePlugin
 
         m_channel = new QWebChannel(m_view->page());
         m_channel->registerObject("interface", m_interface);
+        m_channel->registerObject("playerSettings", settings);
         m_view->page()->setWebChannel(m_channel);
 
         loadScriptFile(":/qtwebchannel/qwebchannel.js", QWebEngineScript::DocumentCreation);
