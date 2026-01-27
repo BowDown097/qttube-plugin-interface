@@ -25,9 +25,13 @@ namespace QtTubePlugin
     {
         struct ColorPalette
         {
-            QString subscribeBackground = "red";
+            QString subscribeBackground = "#e62117";
             QString subscribeBorder = "transparent";
             QString subscribeForeground = "#fefefe";
+
+            QString subscribeDisabledBackground = "#f28f8a";
+            QString subscribeDisabledBorder = "transparent";
+            QString subscribeDisabledForeground = "#f9f9f9";
 
             QString subscribeHoveredBackground = "#d90a17";
             QString subscribeHoveredBorder = "transparent";
