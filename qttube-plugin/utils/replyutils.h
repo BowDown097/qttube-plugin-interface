@@ -13,15 +13,12 @@ namespace QtTubePlugin
 
     // this should be used when returning results immediately in a reply.
     // this is quite spaghetti tho, i don't like it :(
-    template<typename ReplyType> requires is_reply_v<ReplyType>
-    void delayedEmit(ReplyType* inst, auto&&... args)
+    template<typename Object, typename Function>
+        requires std::is_member_function_pointer_v<Function> && std::derived_from<Object, QObject>
+    void invokeQueued(Object* obj, Function func, auto&&... args)
     {
-        using FirstArg = std::remove_cvref_t<std::tuple_element_t<0, std::tuple<decltype(args)...>>>;
-        QMetaObject::invokeMethod(inst, [inst, ...args = std::forward<decltype(args)>(args)]() mutable {
-            if constexpr (std::same_as<FirstArg, Exception>)
-                emit inst->exception(std::forward<decltype(args)>(args)...);
-            else
-                emit inst->finished(std::forward<decltype(args)>(args)...);
+        QMetaObject::invokeMethod(obj, [func, obj, ...args = std::forward<decltype(args)>(args)]() mutable {
+            (obj->*func)(std::forward<decltype(args)>(args)...);
         }, Qt::QueuedConnection);
     }
 
