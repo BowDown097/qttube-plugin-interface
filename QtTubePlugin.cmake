@@ -5,7 +5,8 @@ function(create_qttube_plugin target)
     endif()
 
     # check for presence of metadata file
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json")
+    set(metadata_file "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json")
+    if(NOT EXISTS "${metadata_file}")
         message(FATAL_ERROR "metadata.json not found in root project directory.")
     endif()
 
@@ -24,60 +25,38 @@ function(create_qttube_plugin target)
         set_target_properties(${target} PROPERTIES INSTALL_RPATH "@loader_path/../plugin-libs")
     endif()
 
-    # attempt to extract data from metadata.json
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/metadata.json" metadata_json)
-
-    ## get name - required
-    string(JSON plugin_name GET "${metadata_json}" name)
-
-    ## get version (with fallback to PROJECT_VERSION if possible) - required
-    if(PROJECT_VERSION)
-        string(JSON plugin_version ERROR_VARIABLE json_error GET "${metadata_json}" version)
-        if(json_error)
-            message(WARNING "Plugin metadata provided no version. Falling back to project version (${PROJECT_VERSION})")
-            set(plugin_version "${PROJECT_VERSION}")
+    # helper function for required JSON fields
+    function(json_get_required out json key)
+        string(JSON ${out} ERROR_VARIABLE err GET "${json}" ${key})
+        if(err)
+            message(FATAL_ERROR "Missing required field in metadata.json: ${key}")
         endif()
-    else()
-        string(JSON plugin_version GET "${metadata_json}" version)
-    endif()
+        set(${out} "${${out}}" PARENT_SCOPE)
+    endfunction()
 
-    ## get description (with fallback to PROJECT_DESCRIPTION if possible) - required
-    if(PROJECT_DESCRIPTION)
-        string(JSON plugin_description ERROR_VARIABLE json_error GET "${metadata_json}" description)
-        if(json_error)
-            message(WARNING "Plugin metadata provided no description. Falling back to project description (${PROJECT_DESCRIPTION})")
-            set(plugin_description "${PROJECT_DESCRIPTION}")
-        endif()
-    else()
-        string(JSON plugin_description GET "${metadata_json}" description)
-    endif()
-
-    ## get url (with fallback to PROJECT_HOMEPAGE_URL if possible) - optional
-    string(JSON plugin_url ERROR_VARIABLE json_error GET "${metadata_json}" url)
-    if(json_error)
-        if(PROJECT_HOMEPAGE_URL)
-            message(WARNING "Plugin metadata provided no URL. Falling back to project homepage URL (${PROJECT_HOMEPAGE_URL})")
-            set(plugin_url "${PROJECT_HOMEPAGE_URL}")
+    # helper function for optional JSON fields
+    function(json_get_optional out json key)
+        string(JSON ${out} ERROR_VARIABLE err GET "${json}" ${key})
+        if(err)
+            message(WARNING "Missing optional field in metadata.json: ${key} - it is highly recommended to provide this")
+            set(${out} "" PARENT_SCOPE)
         else()
-            set(plugin_url "")
+            set(${out} "${${out}}" PARENT_SCOPE)
         endif()
-    endif()
+    endfunction()
 
-    ## get image - optional, but with nag
-    string(JSON plugin_image ERROR_VARIABLE json_error GET "${metadata_json}" image)
-    if(json_error)
-        message(WARNING "Plugin metadata provided no image. It is recommended to provide one.")
-        set(plugin_image "")
-    endif()
+    # attempt to extract metadata from metadata.json
+    file(READ "${metadata_file}" metadata_json)
 
-    ## get author - optional, but with nag
-    string(JSON plugin_author ERROR_VARIABLE json_error GET "${metadata_json}" author)
-    if(json_error)
-        message(WARNING "Plugin metadata provided no author. It is recommended to provide one.")
-        set(plugin_author "")
-    endif()
+    json_get_required(plugin_name        "${metadata_json}" name)
+    json_get_required(plugin_version     "${metadata_json}" version)
+    json_get_required(plugin_description "${metadata_json}" description)
 
-    # save extracted data to compile definitions
+    json_get_optional(plugin_url         "${metadata_json}" url)
+    json_get_optional(plugin_image       "${metadata_json}" image)
+    json_get_optional(plugin_author      "${metadata_json}" author)
+
+    # save metadata as compile definitions
     target_compile_definitions(${target} PRIVATE
         PLUGIN_NAME="${plugin_name}"
         PLUGIN_VERSION="${plugin_version}"
