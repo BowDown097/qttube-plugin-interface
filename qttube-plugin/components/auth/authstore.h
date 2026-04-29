@@ -26,8 +26,13 @@ namespace QtTubePlugin
     public:
         void clear() override;
 
+        // these methods will not unauthenticate for you!
+        // it is your responsibility to do so if necessary.
+        void drop(AuthUser* login);
+        void drop(const std::unique_ptr<AuthUser>& login);
+
         AuthUser* activeBaseLogin() const;
-        const QList<AuthUser*> baseCredentials() const;
+        const std::vector<std::unique_ptr<AuthUser>>& baseCredentials() const { return m_credentials; }
         bool isEmpty() const;
         qsizetype size() const;
 
