@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 
 project(qttube-plugin-interface
-    VERSION 1.2
+    VERSION 1.2.1
     DESCRIPTION "An interface for developing plugins for QtTube."
     HOMEPAGE_URL "https://github.com/BowDown097/qttube-plugin-interface"
     LANGUAGES CXX)
@@ -11,12 +11,12 @@ option(ENABLE_WEB_COMPONENTS "Enable usage of WebEngine-based components." OFF)
 
 add_library(QtTube-PluginInterface STATIC)
 
+target_compile_features(QtTube-PluginInterface PUBLIC cxx_std_20)
+
 set_target_properties(QtTube-PluginInterface PROPERTIES
     AUTOMOC ON
     AUTORCC ON
     AUTOUIC ON
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED ON
     POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(QtTube-PluginInterface PUBLIC verdigris/src)
