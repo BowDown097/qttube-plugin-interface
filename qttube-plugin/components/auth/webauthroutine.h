@@ -43,6 +43,8 @@ namespace QtTubePlugin
     {
         Q_OBJECT
     public:
+        using AuthRoutine::AuthRoutine;
+
         QHash<QByteArray, QByteArray> searchCookies() const;
         void setSearchCookies(const QList<SearchCookie>& cookies);
         virtual void onNewCookie(const QByteArray& name, const QByteArray& value) {}

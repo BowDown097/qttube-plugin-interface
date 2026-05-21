@@ -54,7 +54,9 @@ namespace QtTubePlugin
     };
 
     template<typename UserType, typename RoutineType>
-        requires std::derived_from<UserType, AuthUser> && std::derived_from<RoutineType, AuthRoutine>
+        requires std::derived_from<UserType, AuthUser> &&
+                 std::derived_from<RoutineType, AuthRoutine> &&
+                 std::constructible_from<RoutineType, AuthStoreBase*>
     class AuthStore : public AuthStoreBase
     {
     public:
@@ -68,23 +70,22 @@ namespace QtTubePlugin
 
         void append(UserType&& user)
         {
-            m_credentials.push_back(std::make_unique<std::remove_cvref_t<UserType>>(std::forward<UserType>(user)));
+            m_credentials.push_back(std::make_unique<UserType>(std::forward<UserType>(user)));
         }
 
-        const QList<UserType*> credentials() const
+        QList<UserType*> credentials() const
         {
             QList<UserType*> out;
             out.reserve(m_credentials.size());
-            std::ranges::transform(m_credentials, std::back_inserter(out), [](const std::unique_ptr<AuthUser>& user) {
-                return static_cast<UserType*>(user.get());
-            });
+            for (const std::unique_ptr<AuthUser>& user : m_credentials)
+                out.append(static_cast<UserType*>(user.get()));
             return out;
         }
 
         void startAuthRoutine() override
         {
-            m_activeRoutine = new RoutineType;
-            connect(m_activeRoutine, &RoutineType::success, this, &AuthStoreBase::authenticateSuccess);
+            m_activeRoutine.reset(new RoutineType(this));
+            connect(m_activeRoutine.data(), &RoutineType::success, this, &AuthStoreBase::authenticateSuccess);
             m_activeRoutine->start();
         }
 
@@ -92,6 +93,7 @@ namespace QtTubePlugin
         {
             if (data.channelId.isEmpty())
             {
+                m_activeRoutine.reset();
                 emit updateFail();
                 return;
             }
@@ -101,17 +103,14 @@ namespace QtTubePlugin
                 if (user->id != data.channelId)
                 {
                     user->active = false;
-                    if (auto match = std::ranges::find(m_credentials, data.channelId, &AuthUser::id);
-                        match != m_credentials.end())
+                    auto match = std::ranges::find(m_credentials, data.channelId, &AuthUser::id);
+                    if (match != m_credentials.end())
                     {
                         AuthUser* matchUser = match->get();
                         matchUser->active = true;
                         matchUser->avatar = data.avatarUrl;
                         matchUser->handle = data.handle;
                         matchUser->username = data.displayName;
-
-                        saveAndCleanUp();
-                        return;
                     }
                 }
                 else
@@ -119,23 +118,18 @@ namespace QtTubePlugin
                     user->avatar = data.avatarUrl;
                     user->handle = data.handle;
                     user->username = data.displayName;
-
-                    saveAndCleanUp();
-                    return;
                 }
             }
+            else
+            {
+                append(createUser(data, m_activeRoutine.data()));
+            }
 
-            append(createUser(data, m_activeRoutine));
-            saveAndCleanUp();
+            m_activeRoutine.reset();
+            if (!isEmpty())
+                save();
         }
     private:
-        RoutineType* m_activeRoutine{};
-
-        void saveAndCleanUp()
-        {
-            save();
-            if (m_activeRoutine)
-                m_activeRoutine->deleteLater();
-        }
+        QScopedPointer<RoutineType, QScopedPointerDeleteLater> m_activeRoutine;
     };
 }
