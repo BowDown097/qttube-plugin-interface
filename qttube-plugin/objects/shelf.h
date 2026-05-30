@@ -19,6 +19,8 @@ namespace QtTubePlugin
     template<typename... ItemTypes>
     struct Shelf : ShelfBase
     {
+        static_assert(sizeof...(ItemTypes) > 0, "Shelf must contain at least one type");
+
         QList<std::variant<ItemTypes...>> contents;
         Shelf() = default;
         using ShelfBase::ShelfBase;

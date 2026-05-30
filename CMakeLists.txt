@@ -33,6 +33,7 @@ target_sources(QtTube-PluginInterface
         qttube-plugin/utils/localcache.cpp
     PUBLIC
         FILE_SET HEADERS FILES
+            qttube-plugin/pluginfwd.h
             qttube-plugin/plugininterface.h
             qttube-plugin/pluginmetadata.h
             qttube-plugin/components/configstore.h
