@@ -65,6 +65,12 @@ namespace QtTubePlugin
     #endif
     }
 
+    void WebAuthRoutine::setLoginButton(const QString& loginButton)
+    {
+        m_loginButton = loginButton;
+        m_loginButton.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
     void WebAuthRoutine::setSearchCookies(const QList<SearchCookie>& cookies)
     {
         for (const SearchCookie& searchCookie : cookies)
@@ -101,6 +107,36 @@ namespace QtTubePlugin
 
         view->load(m_url);
         view->show();
+
+        if (!m_loginButton.isEmpty())
+        {
+            connect(view, &QWebEngineView::loadFinished, this, [this, page](bool ok) {
+                if (!ok)
+                    return;
+
+                page->runJavaScript(QStringLiteral(R"(
+                    const selector = "%1";
+
+                    function isClickable(el) {
+                        if (!el || el.disabled)
+                            return false;
+
+                        const style = window.getComputedStyle(el);
+                        return style.display !== "none" && style.visibility !== "hidden" && parseFloat(style.opacity) > 0;
+                    }
+
+                    const interval = setInterval(() => {
+                        const el = document.querySelector(selector);
+                        if (isClickable(el)) {
+                            clearInterval(interval);
+                            el.click();
+                        }
+                    }, 500);
+
+                    setTimeout(() => clearInterval(interval), 30000);
+                )").arg(m_loginButton));
+            });
+        }
 
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         QList<QByteArray> headerKeys;

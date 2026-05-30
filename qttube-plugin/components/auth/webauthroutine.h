@@ -54,9 +54,13 @@ namespace QtTubePlugin
         void setSearchHeaders(const QList<QByteArray>& headers);
         virtual void onNewHeader(const QByteArray& name, const QByteArray& value) {}
 
+        // Set the CSS query for the login button to be clicked on page load, if needed.
+        void setLoginButton(const QString& loginButton);
+
         void setUrl(const QUrl& url) { m_url = url; }
         void start() override;
     protected:
+        QString m_loginButton;
         QList<std::pair<SearchCookie, QByteArray>> m_searchCookies;
         QUrl m_url;
     private:
