@@ -5,12 +5,6 @@
 #include "components/settings/settingsstore.h"
 #include "pluginmetadata.h"
 
-#ifdef Q_OS_WIN
-#define DLLEXPORT __declspec(dllexport)
-#else
-#define DLLEXPORT
-#endif
-
 namespace QtTubePlugin
 {
     struct PluginInterface
@@ -84,59 +78,83 @@ using QtTubePluginPlayerFunc = QtTubePlugin::Player*(*)(QtTubePlugin::PlayerSett
 using QtTubePluginSettingsFunc = QtTubePlugin::SettingsStore*(*)();
 using QtTubePluginTargetVersionFunc = const char*(*)();
 
-#define EXPAND(x) x
-#define GET_MACRO(_1, _2, _3, _4, NAME, ...) NAME
+#define QTTUBE_EXPAND(x) x
+#define QTTUBE_GET_MACRO(_1, _2, _3, _4, NAME, ...) NAME
 #define DECLARE_QTTUBE_PLUGIN(...) \
-EXPAND(GET_MACRO(__VA_ARGS__, \
-                 DECLARE_QTTUBE_PLUGIN4, DECLARE_QTTUBE_PLUGIN3, \
-                 DECLARE_QTTUBE_PLUGIN2, DECLARE_QTTUBE_PLUGIN1)(__VA_ARGS__))
+QTTUBE_EXPAND(QTTUBE_GET_MACRO(__VA_ARGS__, \
+    DECLARE_QTTUBE_PLUGIN4, DECLARE_QTTUBE_PLUGIN3, \
+    DECLARE_QTTUBE_PLUGIN2, DECLARE_QTTUBE_PLUGIN1)(__VA_ARGS__))
+
+
+#define QTTUBE_TARGET_VERSION_FUNC \
+    Q_DECL_EXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; }
+
+#define QTTUBE_METADATA_FUNC \
+    Q_DECL_EXPORT QtTubePlugin::PluginMetadata metadata() \
+    { \
+        return { \
+            .name = PLUGIN_NAME, \
+            .version = PLUGIN_VERSION, \
+            .description = PLUGIN_DESCRIPTION, \
+            .image = PLUGIN_IMAGE, \
+            .author = PLUGIN_AUTHOR, \
+            .url = PLUGIN_URL, \
+            .channelUrlTemplate = PLUGIN_CHANNEL_URL_TEMPLATE, \
+            .videoUrlTemplate = PLUGIN_VIDEO_URL_TEMPLATE \
+        }; \
+    }
+
+#define QTTUBE_NEW_INSTANCE_FUNC(PluginClass) \
+    QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; }
+
+#define QTTUBE_PLAYER_FUNC(PlayerClass) \
+    Q_DECL_EXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) \
+    { return new PlayerClass(settings, parent); }
+
+#define QTTUBE_CREATE_STORE(StoreClass, UserClass) \
+    static std::unique_ptr<UserClass> p = QtTubePlugin::StoreClass::create<UserClass>(\
+        PLUGIN_NAME, QtTubePlugin::isPortableBuild())
+
+#define QTTUBE_SETTINGS_FUNC(SettingsClass) \
+    Q_DECL_EXPORT QtTubePlugin::SettingsStore* settings() { QTTUBE_CREATE_STORE(SettingsStore, SettingsClass); return p.get(); }
+
+#define QTTUBE_AUTH_FUNC(AuthClass) \
+    Q_DECL_EXPORT QtTubePlugin::AuthStoreBase* auth() { QTTUBE_CREATE_STORE(AuthStoreBase, AuthClass); return p.get(); }
 
 #define DECLARE_QTTUBE_PLUGIN1(PluginClass) \
     extern "C" \
     { \
-        DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
-        DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
-        DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
+        QTTUBE_TARGET_VERSION_FUNC \
+        QTTUBE_METADATA_FUNC \
+        QTTUBE_NEW_INSTANCE_FUNC(PluginClass) \
     }
 
 #define DECLARE_QTTUBE_PLUGIN2(PluginClass, PlayerClass) \
     extern "C" \
     { \
-        DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
-        DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
-        DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
-        DLLEXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) { return new PlayerClass(settings, parent); } \
+        QTTUBE_TARGET_VERSION_FUNC \
+        QTTUBE_METADATA_FUNC \
+        QTTUBE_NEW_INSTANCE_FUNC(PluginClass) \
+        QTTUBE_PLAYER_FUNC(PlayerClass) \
     }
 
 #define DECLARE_QTTUBE_PLUGIN3(PluginClass, PlayerClass, SettingsClass) \
     extern "C" \
     { \
-        DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
-        DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
-        DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
-        DLLEXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) { return new PlayerClass(settings, parent); } \
-        DLLEXPORT QtTubePlugin::Settings* settings() \
-        { \
-            static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
-            return s.get(); \
-        } \
+        QTTUBE_TARGET_VERSION_FUNC \
+        QTTUBE_METADATA_FUNC \
+        QTTUBE_NEW_INSTANCE_FUNC(PluginClass) \
+        QTTUBE_PLAYER_FUNC(PlayerClass) \
+        QTTUBE_SETTINGS_FUNC(SettingsClass) \
     }
 
 #define DECLARE_QTTUBE_PLUGIN4(PluginClass, PlayerClass, SettingsClass, AuthClass) \
     extern "C" \
     { \
-        DLLEXPORT const char* targetVersion() { return QTTUBE_VERSION_NAME; } \
-        DLLEXPORT QtTubePlugin::PluginInterface* newInstance() { return new PluginClass; } \
-        DLLEXPORT QtTubePlugin::PluginMetadata metadata() { return { PLUGIN_NAME, PLUGIN_VERSION, PLUGIN_DESCRIPTION, PLUGIN_IMAGE, PLUGIN_AUTHOR, PLUGIN_URL }; } \
-        DLLEXPORT QtTubePlugin::Player* player(QtTubePlugin::PlayerSettings* settings, QWidget* parent) { return new PlayerClass(settings, parent); } \
-        DLLEXPORT QtTubePlugin::SettingsStore* settings() \
-        { \
-            static std::unique_ptr<SettingsClass> s = QtTubePlugin::SettingsStore::create<SettingsClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
-            return s.get(); \
-        } \
-        DLLEXPORT QtTubePlugin::AuthStoreBase* auth() \
-        { \
-            static std::unique_ptr<AuthClass> a = QtTubePlugin::AuthStoreBase::create<AuthClass>(PLUGIN_NAME, QtTubePlugin::isPortableBuild()); \
-            return a.get(); \
-        } \
+        QTTUBE_TARGET_VERSION_FUNC \
+        QTTUBE_METADATA_FUNC \
+        QTTUBE_NEW_INSTANCE_FUNC(PluginClass) \
+        QTTUBE_PLAYER_FUNC(PlayerClass) \
+        QTTUBE_SETTINGS_FUNC(SettingsClass) \
+        QTTUBE_AUTH_FUNC(AuthClass) \
     }

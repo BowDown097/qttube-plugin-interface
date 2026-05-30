@@ -48,20 +48,24 @@ function(create_qttube_plugin target)
     # attempt to extract metadata from metadata.json
     file(READ "${metadata_file}" metadata_json)
 
-    json_get_required(plugin_name        "${metadata_json}" name)
-    json_get_required(plugin_version     "${metadata_json}" version)
-    json_get_required(plugin_description "${metadata_json}" description)
+    json_get_required(plugin_name                 "${metadata_json}" name)
+    json_get_required(plugin_version              "${metadata_json}" version)
+    json_get_required(plugin_description          "${metadata_json}" description)
+    json_get_required(plugin_channel_url_template "${metadata_json}" channel_url_template)
+    json_get_required(plugin_video_url_template   "${metadata_json}" video_url_template)
 
-    json_get_optional(plugin_url         "${metadata_json}" url)
-    json_get_optional(plugin_image       "${metadata_json}" image)
-    json_get_optional(plugin_author      "${metadata_json}" author)
+    json_get_optional(plugin_image  "${metadata_json}" image)
+    json_get_optional(plugin_author "${metadata_json}" author)
+    json_get_optional(plugin_url    "${metadata_json}" url)
 
     # save metadata as compile definitions
     target_compile_definitions(${target} PRIVATE
         PLUGIN_NAME="${plugin_name}"
         PLUGIN_VERSION="${plugin_version}"
         PLUGIN_DESCRIPTION="${plugin_description}"
-        PLUGIN_URL="${plugin_url}"
         PLUGIN_IMAGE="${plugin_image}"
-        PLUGIN_AUTHOR="${plugin_author}")
+        PLUGIN_AUTHOR="${plugin_author}"
+        PLUGIN_URL="${plugin_url}"
+        PLUGIN_CHANNEL_URL_TEMPLATE="${plugin_channel_url_template}"
+        PLUGIN_VIDEO_URL_TEMPLATE="${plugin_video_url_template}")
 endfunction()

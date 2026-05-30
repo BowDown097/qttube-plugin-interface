@@ -46,7 +46,6 @@ namespace QtTubePlugin
         QList<Video> recommendedVideos;
         QString titleText;
         QString videoId;
-        QString videoUrlPrefix;
         QString viewCountText;
     };
 }

@@ -17,9 +17,7 @@ namespace QtTubePlugin
         QList<Badge> uploaderBadges;
         QString uploaderId;
         QString uploaderText;
-        QString uploaderUrlPrefix;
         QString videoId;
-        QString videoUrlPrefix;
 
         QTime length() const
         {

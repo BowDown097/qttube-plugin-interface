@@ -70,7 +70,6 @@ namespace QtTubePlugin
         QList<Badge> channelBadges;
         QString channelId;
         QString channelName;
-        QString channelUrlPrefix;
         QString description;
         QString metadataText;
         SubscribeButton subscribeButton;

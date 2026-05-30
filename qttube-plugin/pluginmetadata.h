@@ -11,5 +11,7 @@ namespace QtTubePlugin
         QString image;
         QString author;
         QString url;
+        QString channelUrlTemplate;
+        QString videoUrlTemplate;
     };
 }
