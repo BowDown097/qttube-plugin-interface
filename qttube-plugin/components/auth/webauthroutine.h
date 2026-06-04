@@ -31,12 +31,7 @@ namespace QtTubePlugin
         QString domain;
         QString path;
 
-        friend bool operator==(const SearchCookie& lhs, const QNetworkCookie& rhs)
-        {
-            return (lhs.name == rhs.name()) &&
-                   (lhs.domain.isEmpty() || lhs.domain == rhs.domain()) &&
-                   (lhs.path.isEmpty() || lhs.path == rhs.path());
-        }
+        bool operator==(const QNetworkCookie& rhs) const;
     };
 
     class WebAuthRoutine : public AuthRoutine
@@ -45,12 +40,12 @@ namespace QtTubePlugin
     public:
         using AuthRoutine::AuthRoutine;
 
-        QHash<QByteArray, QByteArray> searchCookies() const;
+        std::unordered_map<QByteArray, QByteArray> searchCookies() const;
         void setSearchCookies(const QList<SearchCookie>& cookies);
         virtual void onNewCookie(const QByteArray& name, const QByteArray& value) {}
 
         // header functions are no-op until Qt 6.5
-        QHash<QByteArray, QByteArray> searchHeaders() const;
+        const std::unordered_map<QByteArray, QByteArray>& searchHeaders() const;
         void setSearchHeaders(const QList<QByteArray>& headers);
         virtual void onNewHeader(const QByteArray& name, const QByteArray& value) {}
 
@@ -62,6 +57,7 @@ namespace QtTubePlugin
     protected:
         QString m_loginButton;
         QList<std::pair<SearchCookie, QByteArray>> m_searchCookies;
+        std::unordered_map<QByteArray, QByteArray> m_searchHeaders;
         QUrl m_url;
     private:
         QWidget* m_loginWindow{};
@@ -75,8 +71,6 @@ namespace QtTubePlugin
 
     // Qt does not provide any way to intercept headers until Qt 6.5
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    protected:
-        QHash<QByteArray, QByteArray> m_searchHeaders;
     private:
         WebAuthRequestInterceptor* m_interceptor;
     private slots:

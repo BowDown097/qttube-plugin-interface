@@ -6,6 +6,13 @@
 
 namespace QtTubePlugin
 {
+    bool SearchCookie::operator==(const QNetworkCookie& rhs) const
+    {
+        return (name == rhs.name()) &&
+               (domain.isEmpty() || domain == rhs.domain()) &&
+               (path.isEmpty() || path == rhs.path());
+    }
+
     void WebAuthRoutine::checkAndEmitSuccess()
     {
         m_searchCheckMutex.lock();
@@ -25,8 +32,8 @@ namespace QtTubePlugin
 
     void WebAuthRoutine::cookieAdded(const QNetworkCookie& cookie)
     {
-        if (auto it = std::ranges::find_if(m_searchCookies, [&](const auto& p) { return p.first == cookie; });
-            it != m_searchCookies.end())
+        auto it = std::ranges::find_if(m_searchCookies, [&](const auto& p) { return p.first == cookie; });
+        if (it != m_searchCookies.end())
         {
             it->second = cookie.value();
             onNewCookie(cookie.name(), cookie.value());
@@ -38,31 +45,21 @@ namespace QtTubePlugin
     bool WebAuthRoutine::nothingToSearch() const
     {
         #define ALL_FOUND(map) std::ranges::none_of(map, [](const auto& p) { return p.second.isEmpty(); })
-    #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        return ALL_FOUND(m_searchCookies) && ALL_FOUND(m_searchHeaders.asKeyValueRange());
-    #else
-        return ALL_FOUND(m_searchCookies);
-    #endif
+        return ALL_FOUND(m_searchCookies) && ALL_FOUND(m_searchHeaders);
     }
 
-    QHash<QByteArray, QByteArray> WebAuthRoutine::searchCookies() const
+    std::unordered_map<QByteArray, QByteArray> WebAuthRoutine::searchCookies() const
     {
-        QHash<QByteArray, QByteArray> out;
+        std::unordered_map<QByteArray, QByteArray> out;
         out.reserve(m_searchCookies.size());
-
         for (const auto& [searchCookie, value] : m_searchCookies)
             out.emplace(searchCookie.name, value);
-
         return out;
     }
 
-    QHash<QByteArray, QByteArray> WebAuthRoutine::searchHeaders() const
+    const std::unordered_map<QByteArray, QByteArray>& WebAuthRoutine::searchHeaders() const
     {
-    #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         return m_searchHeaders;
-    #else
-        return {};
-    #endif
     }
 
     void WebAuthRoutine::setLoginButton(const QString& loginButton)
@@ -139,12 +136,8 @@ namespace QtTubePlugin
         }
 
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        QList<QByteArray> headerKeys;
-        headerKeys.reserve(m_searchHeaders.size());
-        for (auto it = m_searchHeaders.begin(); it != m_searchHeaders.end(); ++it)
-            headerKeys.append(it.key());
-
-        m_interceptor = new WebAuthRequestInterceptor(headerKeys, this);
+        auto keys = m_searchHeaders | std::views::keys;
+        m_interceptor = new WebAuthRequestInterceptor(QList(keys.begin(), keys.end()), this);
         profile->setUrlRequestInterceptor(m_interceptor);
         connect(m_interceptor, &WebAuthRequestInterceptor::foundHeader,
                 this, &WebAuthRoutine::foundHeader,
@@ -161,7 +154,7 @@ namespace QtTubePlugin
     {
         if (auto it = m_searchHeaders.find(name); it != m_searchHeaders.end())
         {
-            it.value() = value;
+            it->second = value;
             onNewHeader(name, value);
         }
 
@@ -170,20 +163,20 @@ namespace QtTubePlugin
 
     void WebAuthRequestInterceptor::interceptRequest(QWebEngineUrlRequestInfo& info)
     {
-        if (!m_searchHeaders.isEmpty())
+        if (m_searchHeaders.isEmpty())
+            return;
+
+        QHash<QByteArray, QByteArray> headers = info.httpHeaders();
+        for (auto it = m_searchHeaders.begin(); it != m_searchHeaders.end();)
         {
-            QHash<QByteArray, QByteArray> headers = info.httpHeaders();
-            for (auto it = m_searchHeaders.begin(); it != m_searchHeaders.end();)
+            if (auto it2 = headers.find(*it); it2 != headers.end())
             {
-                if (auto it2 = headers.find(*it); it2 != headers.end())
-                {
-                    emit foundHeader(*it, it2.value());
-                    it = m_searchHeaders.erase(it);
-                }
-                else
-                {
-                    ++it;
-                }
+                emit foundHeader(*it, it2.value());
+                it = m_searchHeaders.erase(it);
+            }
+            else
+            {
+                ++it;
             }
         }
     }
