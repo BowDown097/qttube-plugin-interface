@@ -1,37 +1,60 @@
 #include "webauthroutine.h"
+#include <QCoreApplication>
 #include <QMessageBox>
 #include <QWebEngineCookieStore>
 #include <QWebEngineProfile>
 #include <QWebEngineView>
+#include <unordered_set>
+
+struct QNetworkCookieHash
+{
+    size_t operator()(const QNetworkCookie& v) const
+    { return qHashMulti(0, v.name(), v.domain(), v.path()); }
+};
+
+struct QNetworkCookieEqual
+{
+    bool operator()(const QNetworkCookie& lhs, const QNetworkCookie& rhs) const
+    { return lhs.hasSameIdentifier(rhs); }
+};
 
 namespace QtTubePlugin
 {
-    bool SearchCookie::operator==(const QNetworkCookie& rhs) const
-    {
-        return (name == rhs.name()) &&
-               (domain.isEmpty() || domain == rhs.domain()) &&
-               (path.isEmpty() || path == rhs.path());
-    }
+    WebAuthRoutine::WebAuthRoutine(AuthStoreBase* authStore)
+        : AuthRoutine(authStore),
+          m_authDebug(QCoreApplication::arguments().contains("--auth-debug")) {}
 
     void WebAuthRoutine::checkAndEmitSuccess()
     {
-        m_searchCheckMutex.lock();
+        m_mutex.lock();
         if (!m_successEmitted && nothingToSearch())
         {
             m_successEmitted = true;
-            m_searchCheckMutex.unlock();
+            m_mutex.unlock();
             m_loginWindow->hide();
             m_loginWindow->deleteLater();
             emit success();
         }
         else
         {
-            m_searchCheckMutex.unlock();
+            m_mutex.unlock();
         }
     }
 
     void WebAuthRoutine::cookieAdded(const QNetworkCookie& cookie)
     {
+        if (m_authDebug)
+        {
+            static std::unordered_set<QNetworkCookie, QNetworkCookieHash, QNetworkCookieEqual> seen;
+            if (auto [_, inserted] = seen.insert(cookie); inserted)
+            {
+                qDebug().noquote().nospace() << "Cookie: "
+                    << "name=" << cookie.name() << ' '
+                    << "domain=" << cookie.domain() << ' '
+                    << "path=" << cookie.path();
+            }
+        }
+
         auto it = std::ranges::find_if(m_searchCookies, [&](const auto& p) { return p.first == cookie; });
         if (it != m_searchCookies.end())
         {
@@ -41,6 +64,19 @@ namespace QtTubePlugin
 
         checkAndEmitSuccess();
     }
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    void WebAuthRoutine::foundHeader(const QByteArray& name, const QByteArray& value)
+    {
+        if (auto it = m_searchHeaders.find(name); it != m_searchHeaders.end())
+        {
+            it->second = value;
+            onNewHeader(name, value);
+        }
+
+        checkAndEmitSuccess();
+    }
+#endif
 
     bool WebAuthRoutine::nothingToSearch() const
     {
@@ -52,14 +88,9 @@ namespace QtTubePlugin
     {
         std::unordered_map<QByteArray, QByteArray> out;
         out.reserve(m_searchCookies.size());
-        for (const auto& [searchCookie, value] : m_searchCookies)
-            out.emplace(searchCookie.name, value);
+        for (const auto& [cookie, value] : m_searchCookies)
+            out.emplace(cookie.name, value);
         return out;
-    }
-
-    const std::unordered_map<QByteArray, QByteArray>& WebAuthRoutine::searchHeaders() const
-    {
-        return m_searchHeaders;
     }
 
     void WebAuthRoutine::setLoginButton(const QString& loginButton)
@@ -70,13 +101,15 @@ namespace QtTubePlugin
 
     void WebAuthRoutine::setSearchCookies(const QList<SearchCookie>& cookies)
     {
-        for (const SearchCookie& searchCookie : cookies)
-            m_searchCookies.emplaceBack(searchCookie, QByteArray());
+        m_searchCookies.reserve(cookies.size());
+        for (const SearchCookie& cookie : cookies)
+            m_searchCookies.emplace_back(cookie, QByteArray());
     }
 
     void WebAuthRoutine::setSearchHeaders(const QList<QByteArray>& headers)
     {
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        m_searchHeaders.reserve(headers.size());
         for (const QByteArray& header : headers)
             m_searchHeaders.emplace(header, QByteArray());
     #endif
@@ -136,12 +169,14 @@ namespace QtTubePlugin
         }
 
     #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        auto keys = m_searchHeaders | std::views::keys;
-        m_interceptor = new WebAuthRequestInterceptor(QList(keys.begin(), keys.end()), this);
-        profile->setUrlRequestInterceptor(m_interceptor);
-        connect(m_interceptor, &WebAuthRequestInterceptor::foundHeader,
-                this, &WebAuthRoutine::foundHeader,
-                Qt::QueuedConnection);
+        if (!m_searchHeaders.empty())
+        {
+            m_interceptor = new WebAuthRequestInterceptor(this);
+            profile->setUrlRequestInterceptor(m_interceptor);
+            connect(m_interceptor, &WebAuthRequestInterceptor::foundHeader,
+                    this, &WebAuthRoutine::foundHeader,
+                    Qt::QueuedConnection);
+        }
     #endif
 
         connect(profile->cookieStore(), &QWebEngineCookieStore::cookieAdded,
@@ -150,35 +185,22 @@ namespace QtTubePlugin
     }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    void WebAuthRoutine::foundHeader(const QByteArray& name, const QByteArray& value)
-    {
-        if (auto it = m_searchHeaders.find(name); it != m_searchHeaders.end())
-        {
-            it->second = value;
-            onNewHeader(name, value);
-        }
-
-        checkAndEmitSuccess();
-    }
-
     void WebAuthRequestInterceptor::interceptRequest(QWebEngineUrlRequestInfo& info)
     {
-        if (m_searchHeaders.isEmpty())
-            return;
+        QHash<QByteArray, QByteArray> httpHeaders = info.httpHeaders();
+        std::unordered_map<QByteArray, QByteArray>& searchHeaders = m_routine->m_searchHeaders;
 
-        QHash<QByteArray, QByteArray> headers = info.httpHeaders();
-        for (auto it = m_searchHeaders.begin(); it != m_searchHeaders.end();)
+        if (m_routine->m_authDebug)
         {
-            if (auto it2 = headers.find(*it); it2 != headers.end())
-            {
-                emit foundHeader(*it, it2.value());
-                it = m_searchHeaders.erase(it);
-            }
-            else
-            {
-                ++it;
-            }
+            static std::unordered_set<QByteArray> seen;
+            for (const auto& [name, value] : httpHeaders.asKeyValueRange())
+                if (auto [_, inserted] = seen.insert(name); inserted)
+                    qDebug().noquote().nospace() << "Header: " << name << '=' << value;
         }
+
+        for (const auto& [name, value] : searchHeaders)
+            if (auto it = httpHeaders.find(name); it != httpHeaders.end())
+                emit foundHeader(it.key(), it.value());
     }
 #endif
 }

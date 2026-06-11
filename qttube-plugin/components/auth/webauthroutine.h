@@ -1,6 +1,6 @@
 #pragma once
 #include "authroutine.h"
-#include <QHash>
+#include <QHashFunctions>
 #include <QMutex>
 #include <QNetworkCookie>
 
@@ -10,42 +10,35 @@
 
 namespace QtTubePlugin
 {
-#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-    class WebAuthRequestInterceptor : public QWebEngineUrlRequestInterceptor
+    class SearchCookie
     {
-        Q_OBJECT
     public:
-        WebAuthRequestInterceptor(const QList<QByteArray>& searchHeaders, QObject* parent = nullptr)
-            : QWebEngineUrlRequestInterceptor(parent), m_searchHeaders(searchHeaders) {}
-        void interceptRequest(QWebEngineUrlRequestInfo& info) override;
-    private:
-        QList<QByteArray> m_searchHeaders;
-    signals:
-        void foundHeader(const QByteArray& key, const QByteArray& value);
-    };
-#endif
-
-    struct SearchCookie
-    {
         QByteArray name;
         QString domain;
         QString path;
 
-        bool operator==(const QNetworkCookie& rhs) const;
+        friend bool operator==(const SearchCookie& lhs, const SearchCookie& rhs)
+        { return lhs.name == rhs.name || match(lhs.domain, rhs.domain) || match(lhs.path, rhs.path); }
+        friend bool operator==(const SearchCookie& lhs, const QNetworkCookie& rhs)
+        { return lhs.name == rhs.name() || match(lhs.domain, rhs.domain()) || match(lhs.path, rhs.path()); }
+    private:
+        template<typename T>
+        static bool match(const T& lhs, const T& rhs) { return lhs.isEmpty() || lhs == rhs; }
     };
 
     class WebAuthRoutine : public AuthRoutine
     {
+        friend class WebAuthRequestInterceptor;
         Q_OBJECT
     public:
-        using AuthRoutine::AuthRoutine;
+        explicit WebAuthRoutine(AuthStoreBase* authStore);
 
         std::unordered_map<QByteArray, QByteArray> searchCookies() const;
         void setSearchCookies(const QList<SearchCookie>& cookies);
         virtual void onNewCookie(const QByteArray& name, const QByteArray& value) {}
 
         // header functions are no-op until Qt 6.5
-        const std::unordered_map<QByteArray, QByteArray>& searchHeaders() const;
+        const std::unordered_map<QByteArray, QByteArray>& searchHeaders() const { return m_searchHeaders; }
         void setSearchHeaders(const QList<QByteArray>& headers);
         virtual void onNewHeader(const QByteArray& name, const QByteArray& value) {}
 
@@ -56,12 +49,13 @@ namespace QtTubePlugin
         void start() override;
     protected:
         QString m_loginButton;
-        QList<std::pair<SearchCookie, QByteArray>> m_searchCookies;
+        std::vector<std::pair<SearchCookie, QByteArray>> m_searchCookies;
         std::unordered_map<QByteArray, QByteArray> m_searchHeaders;
         QUrl m_url;
     private:
         QWidget* m_loginWindow{};
-        QMutex m_searchCheckMutex;
+        QMutex m_mutex;
+        bool m_authDebug;
         bool m_successEmitted{};
 
         void checkAndEmitSuccess();
@@ -70,11 +64,26 @@ namespace QtTubePlugin
         void cookieAdded(const QNetworkCookie& cookie);
 
     // Qt does not provide any way to intercept headers until Qt 6.5
-    #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     private:
-        WebAuthRequestInterceptor* m_interceptor;
+        class WebAuthRequestInterceptor* m_interceptor;
     private slots:
         void foundHeader(const QByteArray& name, const QByteArray& value);
-    #endif
     };
+
+    class WebAuthRequestInterceptor : public QWebEngineUrlRequestInterceptor
+    {
+        Q_OBJECT
+    public:
+        explicit WebAuthRequestInterceptor(WebAuthRoutine* routine)
+            : QWebEngineUrlRequestInterceptor(routine), m_routine(routine) {}
+        void interceptRequest(QWebEngineUrlRequestInfo& info) override;
+    private:
+        WebAuthRoutine* m_routine;
+    signals:
+        void foundHeader(const QByteArray& key, const QByteArray& value);
+    };
+#else
+    };
+#endif
 }
