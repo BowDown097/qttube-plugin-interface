@@ -18,9 +18,9 @@ namespace QtTubePlugin
         QString path;
 
         friend bool operator==(const SearchCookie& lhs, const SearchCookie& rhs)
-        { return lhs.name == rhs.name || match(lhs.domain, rhs.domain) || match(lhs.path, rhs.path); }
+        { return lhs.name == rhs.name && match(lhs.domain, rhs.domain) && match(lhs.path, rhs.path); }
         friend bool operator==(const SearchCookie& lhs, const QNetworkCookie& rhs)
-        { return lhs.name == rhs.name() || match(lhs.domain, rhs.domain()) || match(lhs.path, rhs.path()); }
+        { return lhs.name == rhs.name() && match(lhs.domain, rhs.domain()) && match(lhs.path, rhs.path()); }
     private:
         template<typename T>
         static bool match(const T& lhs, const T& rhs) { return lhs.isEmpty() || lhs == rhs; }
@@ -33,16 +33,38 @@ namespace QtTubePlugin
     public:
         explicit WebAuthRoutine(AuthStoreBase* authStore);
 
+        /** Get all found cookies that were given to this routine. */
         std::unordered_map<QByteArray, QByteArray> searchCookies() const;
+
+        /** Set cookies to search for in all web requests made in this routine. */
         void setSearchCookies(const QList<SearchCookie>& cookies);
-        virtual void onNewCookie(const QByteArray& name, const QByteArray& value) {}
 
-        // header functions are no-op until Qt 6.5
+        /**
+         * @brief Called when a new search cookie is found.
+         * @return Whether or not to reject the given cookie and continue searching.
+         */
+        virtual bool onNewCookie(const QByteArray& name, const QByteArray& value) { return true; }
+
+        /**
+         * @brief Get all found headers that were given to this routine.
+         * @note It is not possible to search for headers in Qt versions less than 6.5.
+         */
         const std::unordered_map<QByteArray, QByteArray>& searchHeaders() const { return m_searchHeaders; }
-        void setSearchHeaders(const QList<QByteArray>& headers);
-        virtual void onNewHeader(const QByteArray& name, const QByteArray& value) {}
 
-        // Set the CSS query for the login button to be clicked on page load, if needed.
+        /**
+         * @brief Set headers to search for in all web requests made in this routine.
+         * @note It is not possible to search for headers in Qt versions less than 6.5.
+         */
+        void setSearchHeaders(const QList<QByteArray>& headers);
+
+        /**
+         * @brief Called when a new search header is found.
+         * @return Whether or not to reject the given header and continue searching.
+         * @note It is not possible to search for headers in Qt versions less than 6.5.
+         */
+        virtual bool onNewHeader(const QByteArray& name, const QByteArray& value) { return true; }
+
+        /** Set the CSS query for the login button to be clicked on page load, if needed. */
         void setLoginButton(const QString& loginButton);
 
         void setUrl(const QUrl& url) { m_url = url; }

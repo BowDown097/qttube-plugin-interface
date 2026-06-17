@@ -56,11 +56,8 @@ namespace QtTubePlugin
         }
 
         auto it = std::ranges::find_if(m_searchCookies, [&](const auto& p) { return p.first == cookie; });
-        if (it != m_searchCookies.end())
-        {
+        if (it != m_searchCookies.end() && onNewCookie(cookie.name(), cookie.value()))
             it->second = cookie.value();
-            onNewCookie(cookie.name(), cookie.value());
-        }
 
         checkAndEmitSuccess();
     }
@@ -68,11 +65,9 @@ namespace QtTubePlugin
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     void WebAuthRoutine::foundHeader(const QByteArray& name, const QByteArray& value)
     {
-        if (auto it = m_searchHeaders.find(name); it != m_searchHeaders.end())
-        {
+        auto it = m_searchHeaders.find(name);
+        if (it != m_searchHeaders.end() && onNewHeader(name, value))
             it->second = value;
-            onNewHeader(name, value);
-        }
 
         checkAndEmitSuccess();
     }
