@@ -68,6 +68,8 @@ namespace QtTubePlugin
             return it != m_credentials.end() ? static_cast<UserType*>(it->get()) : nullptr;
         }
 
+        QPointer<RoutineType> activeRoutine() const { return m_activeRoutine.data(); }
+
         void append(UserType&& user)
         {
             m_credentials.push_back(std::make_unique<UserType>(std::forward<UserType>(user)));
