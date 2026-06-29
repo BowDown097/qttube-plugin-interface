@@ -2,22 +2,6 @@
 #include <QNetworkDiskCache>
 #include <QStandardPaths>
 
-QVariant HttpReply::attribute(QNetworkRequest::Attribute code) const
-{
-    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
-        return reply->attribute(code);
-    else
-        throw std::runtime_error("Attempting to access reply when request has not been made");
-}
-
-QString HttpReply::errorString() const
-{
-    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
-        return reply->errorString();
-    else
-        throw std::runtime_error("Attempting to access reply when request has not been made");
-}
-
 // https://tools.ietf.org/html/rfc6266
 QString HttpReply::getFileName() const
 {
@@ -50,36 +34,6 @@ QString HttpReply::getFileName() const
     return {};
 }
 
-QByteArray HttpReply::header(const QByteArray& key) const
-{
-    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
-        return reply->rawHeader(key);
-    else
-        throw std::runtime_error("Attempting to access reply when request has not been made");
-}
-
-QByteArray HttpReply::header(QNetworkRequest::KnownHeaders header) const
-{
-    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
-        return reply->header(header).toByteArray();
-    else
-        throw std::runtime_error("Attempting to access reply when request has not been made");
-}
-
-const QList<std::pair<QByteArray, QByteArray>>& HttpReply::headers() const
-{
-    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
-        return reply->rawHeaderPairs();
-    else
-        throw std::runtime_error("Attempting to access reply when request has not been made");
-}
-
-bool HttpReply::isSuccessful() const
-{
-    int status = statusCode();
-    return status >= 200 && status < 300;
-}
-
 QNetworkAccessManager* HttpReply::networkAccessManager()
 {
     static thread_local QNetworkAccessManager* nam = [] {
@@ -96,19 +50,6 @@ QNetworkAccessManager* HttpReply::networkAccessManager()
     }();
 
     return nam;
-}
-
-const QByteArray& HttpReply::readAll() const
-{
-    return std::get<QByteArray>(m_destination);
-}
-
-void HttpReply::readyRead(QNetworkReply* networkReply)
-{
-    if (QByteArray* byteArray = std::get_if<QByteArray>(&m_destination))
-        byteArray->append(networkReply->readAll());
-    else if (QIODevice** ioDevice = std::get_if<QIODevice*>(&m_destination))
-        (*ioDevice)->write(networkReply->readAll());
 }
 
 QByteArray HttpReply::requestHeader(const QByteArray& headerName) const
@@ -129,15 +70,38 @@ QByteArray HttpReply::requestHeader(const QByteArray& headerName) const
     return result;
 }
 
-int HttpReply::statusCode() const
+HttpReply* HttpRequest::requestVariant(
+    const QUrl& url,
+    const std::variant<HttpReply::Operation, QByteArray>& var,
+    const QByteArray& data)
 {
-    if (QNetworkReply* reply = qobject_cast<QNetworkReply*>(parent()))
-        return reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    else
-        throw std::runtime_error("Attempting to access reply when request has not been made");
+    HttpReply* result = new HttpReply(url, std::move(m_headers), std::move(m_sink));
+
+    QNetworkRequest req(result->m_url);
+    req.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::PreferCache);
+    req.setAttribute(QNetworkRequest::CacheSaveControlAttribute, m_usingDiskCache);
+
+    if (m_spoofUserAgent)
+        req.setRawHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36");
+
+    for (const auto& [code, value] : std::as_const(m_attributes))
+        req.setAttribute(code, value);
+    for (const auto& [name, value] : std::as_const(result->m_requestHeaders))
+        req.setRawHeader(name, value);
+
+    if (QNetworkReply* reply = std::visit([&](auto&& v) { return resolveNetworkReply(req, v, data); }, var))
+    {
+        result->setParent(reply);
+        QObject::connect(reply, &QNetworkReply::downloadProgress, result, &HttpReply::downloadProgress);
+        QObject::connect(reply, &QNetworkReply::errorOccurred, result, &HttpReply::errorOccurred);
+        QObject::connect(reply, &QNetworkReply::finished, result, [=] { emit result->finished(*result); });
+        QObject::connect(reply, &QNetworkReply::readyRead, result, [=] { result->onReadyRead(reply); });
+    }
+
+    return result;
 }
 
-QNetworkReply* HttpRequest::networkReply(
+QNetworkReply* HttpRequest::resolveNetworkReply(
     const QNetworkRequest& request, HttpReply::Operation operation, const QByteArray& data)
 {
     switch (operation)
@@ -157,28 +121,19 @@ QNetworkReply* HttpRequest::networkReply(
     }
 }
 
-HttpReply* HttpRequest::request(
-    const QUrl& url, HttpReply::Operation operation, const QByteArray& data)
+QNetworkReply* HttpRequest::resolveNetworkReply(
+    const QNetworkRequest& request, const QByteArray& verb, const QByteArray& data)
 {
-    HttpReply* result = new HttpReply(std::move(m_headers), url, m_ioDevice);
-
-    QNetworkRequest req(result->m_url);
-    req.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::PreferCache);
-    req.setAttribute(QNetworkRequest::CacheSaveControlAttribute, m_usingDiskCache);
-
-    for (const auto& [code, value] : std::as_const(m_attributes))
-        req.setAttribute(code, value);
-    for (const auto& [name, value] : std::as_const(result->m_requestHeaders))
-        req.setRawHeader(name, value);
-
-    if (QNetworkReply* reply = networkReply(req, operation, data))
-    {
-        result->setParent(reply);
-        QObject::connect(reply, &QNetworkReply::downloadProgress, result, &HttpReply::downloadProgress);
-        QObject::connect(reply, &QNetworkReply::errorOccurred, result, &HttpReply::errorOccurred);
-        QObject::connect(reply, &QNetworkReply::finished, result, [result] { emit result->finished(*result); });
-        QObject::connect(reply, &QNetworkReply::readyRead, result, [reply, result] { emit result->readyRead(reply); });
-    }
-
-    return result;
+    if (verb.compare("GET", Qt::CaseInsensitive) == 0)
+        return HttpReply::networkAccessManager()->get(request);
+    else if (verb.compare("POST", Qt::CaseInsensitive) == 0)
+        return HttpReply::networkAccessManager()->post(request, data);
+    else if (verb.compare("HEAD", Qt::CaseInsensitive) == 0)
+        return HttpReply::networkAccessManager()->head(request);
+    else if (verb.compare("DELETE", Qt::CaseInsensitive) == 0)
+        return HttpReply::networkAccessManager()->deleteResource(request);
+    else if (verb.compare("PUT", Qt::CaseInsensitive) == 0)
+        return HttpReply::networkAccessManager()->put(request, data);
+    else
+        return HttpReply::networkAccessManager()->sendCustomRequest(request, verb, data);
 }
