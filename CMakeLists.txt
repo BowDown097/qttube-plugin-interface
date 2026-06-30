@@ -6,8 +6,8 @@ project(qttube-plugin-interface
     HOMEPAGE_URL "https://github.com/BowDown097/qttube-plugin-interface"
     LANGUAGES CXX)
 
-option(BUNDLE_HTML_PARSER "Bundle the HtmlParser library." ON)
-option(ENABLE_WEB_COMPONENTS "Enable usage of WebEngine-based components." OFF)
+option(QTTUBE_BUNDLE_HTML_PARSER "Bundle the HtmlParser library" ON)
+option(QTTUBE_ENABLE_WEB_COMPONENTS "Enable usage of WebEngine-based components" ON)
 
 add_library(QtTube-PluginInterface STATIC)
 
@@ -70,7 +70,7 @@ target_sources(QtTube-PluginInterface
             qttube-plugin/utils/localcache.h
             qttube-plugin/utils/replyutils.h)
 
-if(BUNDLE_HTML_PARSER)
+if(QTTUBE_BUNDLE_HTML_PARSER)
     include(FetchContent)
     FetchContent_Declare(
         HtmlParser
@@ -85,7 +85,7 @@ if(BUNDLE_HTML_PARSER)
     target_link_libraries(QtTube-PluginInterface PUBLIC HtmlParser)
 endif()
 
-if(ENABLE_WEB_COMPONENTS)
+if(QTTUBE_ENABLE_WEB_COMPONENTS)
     find_package(Qt6 REQUIRED COMPONENTS Network WebEngineWidgets Widgets)
     target_link_libraries(QtTube-PluginInterface PUBLIC Qt::Network Qt::WebEngineWidgets Qt::Widgets)
     target_sources(QtTube-PluginInterface
@@ -102,4 +102,3 @@ else()
 endif()
 
 add_library(QtTube::PluginInterface ALIAS QtTube-PluginInterface)
-
