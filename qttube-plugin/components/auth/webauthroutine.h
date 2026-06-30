@@ -41,7 +41,7 @@ namespace QtTubePlugin
 
         /**
          * @brief Called when a new search cookie is found.
-         * @return Whether or not to reject the given cookie and continue searching.
+         * @return Whether to accept the given cookie (true) or continue searching (false).
          */
         virtual bool onNewCookie(const QByteArray& name, const QByteArray& value) { return true; }
 
@@ -59,7 +59,7 @@ namespace QtTubePlugin
 
         /**
          * @brief Called when a new search header is found.
-         * @return Whether or not to reject the given header and continue searching.
+         * @return Whether to accept the given header (true) or continue searching (false).
          * @note It is not possible to search for headers in Qt versions less than 6.5.
          */
         virtual bool onNewHeader(const QByteArray& name, const QByteArray& value) { return true; }
